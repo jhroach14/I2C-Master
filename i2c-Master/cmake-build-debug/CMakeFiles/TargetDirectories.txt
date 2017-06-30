@@ -1,0 +1,3 @@
+/home/User/sat-lab/i2c-Master/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/User/sat-lab/i2c-Master/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/User/sat-lab/i2c-Master/cmake-build-debug/CMakeFiles/i2c_Master.dir
