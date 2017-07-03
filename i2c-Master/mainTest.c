@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define BATT_ADDR 0x2A
+#define I2C_BUS 0x2A
 
 static const char *I2C_ADAPTER = "/dev/i2c-1";
 
@@ -54,7 +54,7 @@ int main() {
 			printf("I2C-TEST: Response packet = 0x%x%x", rspByts[1], rspByts[2]);
 		}//while2
 	}//while1
-	
+	return(EXIT_SUCCESS);
 }
 
 void readResponse(int i2cBus, char *response){
@@ -102,11 +102,11 @@ int startI2C() {
 }
 
 //sets recipient of commands on bus
- void setSlave(int i2cBus, int slvAddr){
+void setSlave(int i2cBus,unsigned int slvAddr){
 	 
 	printf("I2C-TEST: Acquiring bus to slave node at 0x%x... ", slvAddr);
 	
-	if ( ioctl(I2C_BUS, I2C_SLAVE, addr) < 0 ) {
+	if ( ioctl(I2C_BUS, I2C_SLAVE, slvAddr) < 0 ) {
 		printf("Failed to acquire bus access\n");
 		exit(1);
 	} else {
