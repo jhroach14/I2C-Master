@@ -100,7 +100,13 @@ int main(int argc, char* argv[]) {
 					for(int i=0; i<numBytes; i++){
 						printf(" 0x%02hhx", buff[i]);
 					}
+					/*readResponse(buff, numBytes);
+					printf("I2C-TEST: Response:");
+					for(int i=0; i<numBytes; i++){
+						printf(" 0x%02hhx", buff[i]);
+					}*/
 				}
+				puts("\n");
 				
 				printf("I2C-TEST:-----\n");	
 				sleep(1);							
@@ -248,11 +254,15 @@ int getDataSize(){
 void readResponse(unsigned int buff[], int n){
 	int count =0;
 	unsigned int buf[n];
-	if((count = read(i2cBus, buf, n)) < 0){
+	if((count = read(i2cBus, buf, 4*n)) < 0){
 		perror("READ");
 		exit(0);
-	} 
-	strncpy(buff, buf, count);
+	}
+
+	/*for(int i=0;i<n;i++){
+		printf(" buff %d  = %02hhx ",i,buf[i]);
+	}*/
+	strncpy(buff, buf, 4*n);
 
 	printf("I2C-TEST: Attempted to read %d bytes. %d bytes successfully read.\n", n, count);
 }
@@ -261,7 +271,7 @@ void writeCommand(unsigned int buff[], int n){
 
 	printf("I2C-TEST: Sending %d bytes... ", n);
 	int count =0;
-	if((count = write(i2cBus, buff, n)) < 0){
+	if((count = write(i2cBus, buff, 4*n)) < 0){
 		perror("WRITE");
 		exit(0);
 	}
