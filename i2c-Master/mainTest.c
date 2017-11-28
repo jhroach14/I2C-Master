@@ -13,6 +13,7 @@
 
 #define BATTERY_ADDR 0x2A
 #define EPS_MTHBD_ADDR 0x2B
+#define UHF_ADDR 0x25
 
 #define DATA_FILE "masterTest.data"//data file for auto mode
 
@@ -32,8 +33,10 @@ struct cmdData{
 int startI2C();//connect as master node to bus
 void setReceiverSlave( unsigned int slvAddr);//pass in address of slave you wish to message
 void printDevices();
-void writeCommand(unsigned int cmdCode, unsigned int param);//write to bus
-void readResponse(char *response); //fills char* with response bytes
+//void writeCommand(unsigned int cmdCode, unsigned int param);//write to bus
+void writeCommand(unsigned int buff[], int n);
+//void readResponse(char *response); //fills char* with response bytes
+void readResponse(unsigned int buff[], int n);
 int getDataFile(char *dataBuf);
 int getDataSize();
 int getNumCommands(char * dataBuf, int dataLen);//parse helper
@@ -65,25 +68,42 @@ int main(int argc, char* argv[]) {
 			scanf("%x", &slvAddr);
 			setReceiverSlave(slvAddr);//after this every packet sent will lead with an address byte of the recipient
 						
-			char rspBytes[2];
+			//char rspBytes[2];
 			while(flag2){
+			        	
+				//unsigned int commandCode = 0;
+				//unsigned int parmeterByte = 0;
+				int numBytes = 0;	
+				char wr = 0;
 				
-				unsigned int commandCode = 0;
-				unsigned int parmeterByte = 0;	
-		
-				printf("I2C-TEST: enter cmd (hex): 0x");
+				do{
+					printf("I2C-TEST: r or w + numBytes: ");
+					scanf("%c %d", &wr, &numBytes);
+				}while((wr != 'w' || wr != 'r') && (numBytes < 1));				
 
-				scanf("%x",  &commandCode);
-				printf("I2C-TEST: enter prm (hex): 0x");
-				scanf("%x",  &parmeterByte);				
+				unsigned int buff[numBytes];
 
-				writeCommand( commandCode, parmeterByte);
-				sleep(1);
+				if(wr == 'w'){
+					
+					for(int i=0; i<numBytes; i++){
+						printf("I2C-TEST: Byte %d = 0x",i+1);
+						scanf("%x", &(buff[i]));
+					}
+					
+					writeCommand(buff, numBytes);
+					
+				}else
+				if(wr == 'r'){
+					
+					readResponse(buff, numBytes);
+					printf("I2C-TEST: Response:");
+					for(int i=0; i<numBytes; i++){
+						printf(" 0x%02hhx", buff[i]);
+					}
+				}
 				
-				readResponse( rspBytes);
-				printf("I2C-TEST: Response: 0x%02hhX, 0x%02hhX \n", rspBytes[0],  rspBytes[1]);
-				printf("I2C-TEST:---\n");
-								
+				printf("I2C-TEST:-----\n");	
+				sleep(1);							
 
 			}//while2
 		}//while1
@@ -135,9 +155,9 @@ int main(int argc, char* argv[]) {
 		char rspBytes[2];
 		for(int i = 0; i<cmdNum; i++){//execute commands
 			sleep(1);
-			writeCommand(commands[i].cmdBytes[0], commands[i].cmdBytes[1]);			
+			//writeCommand(commands[i].cmdBytes[0], commands[i].cmdBytes[1]);			
 			sleep(1);
-			readResponse(rspBytes);
+			//readResponse(rspBytes);
 
 			if(rspBytes[0] == commands[i].ansBytes[0] && rspBytes[1] == commands[i].ansBytes[1]){//success
 				printf("I2C-TEST: Test for 0x%02X, 0x%02X "GREEN"PASSED"RESET" with response 0x%02X, 0x%02X\n",commands[i].cmdBytes[0], commands[i].cmdBytes[1], rspBytes[0], rspBytes[1]);	
@@ -212,7 +232,7 @@ int getDataSize(){
 	return fileSize;	
 }
 
-void readResponse(char * rspBytes){
+/*void readResponse(char * rspBytes){
 
 	char buf[2];
 	
@@ -223,9 +243,34 @@ void readResponse(char * rspBytes){
 	
 	strncpy(rspBytes, buf, 2);
 
+}*/
+
+void readResponse(unsigned int buff[], int n){
+	int count =0;
+	unsigned int buf[n];
+	if((count = read(i2cBus, buf, n)) < 0){
+		perror("READ");
+		exit(0);
+	} 
+	strncpy(buff, buf, count);
+
+	printf("I2C-TEST: Attempted to read %d bytes. %d bytes successfully read.\n", n, count);
 }
 
-void writeCommand(unsigned int cmdCode, unsigned int param){
+void writeCommand(unsigned int buff[], int n){
+
+	printf("I2C-TEST: Sending %d bytes... ", n);
+	int count =0;
+	if((count = write(i2cBus, buff, n)) < 0){
+		perror("WRITE");
+		exit(0);
+	}
+
+	printf(" %d bytes sent.\n", count);
+
+} 
+
+/*void writeCommand(unsigned int cmdCode, unsigned int param){
 	
 	char buf[2];
 	buf[0] = cmdCode;
@@ -238,7 +283,7 @@ void writeCommand(unsigned int cmdCode, unsigned int param){
 	}
 	printf("Success.\n");
 	
-}
+}*/
 
 //opens adapter stream for R/W
 int startI2C() {
@@ -269,10 +314,18 @@ void setReceiverSlave(unsigned int slvAddr){
 } 
 	 
 void printDevices(){
+	char args[5] = "-y 1";
+	//args[4] = NULL;
 	
+	if(fork()==0){
+		execvp("i2cdetect",args);
+	}else{
+		wait();
+	}
 	char * devList = "I2C-TEST: Pick a device (hex)?\n"
 							 "\tEPS_BATTERY - 0x2A\n"
 							 "\tEPS_MTHBD - 0x2B\n"
+							 "\tUHF_TRANS - 0x25\n"
 							 "I2C-TEST: 0x";
 	
 	printf(devList);
