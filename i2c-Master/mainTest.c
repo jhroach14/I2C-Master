@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 				do{
 					printf("I2C-TEST: r or w + numBytes: ");
 					scanf("%c %d", &wr, &numBytes);
-				}while((wr != 'w' || wr != 'r') && (numBytes < 1));				
+				}while((wr != 'w' || wr != 'r' || wr != 's') && (numBytes < 1));				
 
 				unsigned int buff[numBytes];
 
@@ -105,6 +105,14 @@ int main(int argc, char* argv[]) {
 					for(int i=0; i<numBytes; i++){
 						printf(" 0x%02hhx", buff[i]);
 					}*/
+				}else
+				if(wr == 's'){
+					unsigned int  reg[1];
+					reg[0] = 0x03;
+					writeCommand(reg, 1);
+					for(int i = 0; i<100000; i++){
+						writeCommand(reg,1);
+					}
 				}
 				puts("\n");
 				
@@ -251,10 +259,78 @@ int getDataSize(){
 
 }*/
 
+void conversion(unsigned int buff[], char buf[], int n){
+	
+	for(int i=0;i<n;i++){
+
+		switch(buff[i]){
+			case 0u:
+				buf[i] = 0b00000000;
+				break;
+			case 1u:
+				buf[i] = 0b00000001;
+				break;
+			case 2u:
+				buf[i] = 0b00000010;
+				break;
+			case 3u:
+				buf[i] = 0b00000011;
+				break;
+			case 4u:
+				buf[i] = 0b00000100;
+				break;
+			case 5u:
+				buf[i] = 0b00000101;
+				break;
+			case 6u:
+				buf[i] = 0b00000110;
+				break;
+			case 7u:
+				buf[i] = 0b00000111;
+				break;
+			case 8u:
+				buf[i] = 0b00001000;
+				break;
+			case 9u:
+				buf[i] = 0b00001001;
+				break;
+			case 10u:
+				buf[i] = 0b00001010;
+				break;
+			case 11u:
+				buf[i] = 0b00001011;
+				break;
+			case 12u:
+				buf[i] = 0b00001100;
+				break;
+			case 13u:
+				buf[i] = 0b00001101;
+				break;
+			case 14u:
+				buf[i] = 0b00001110;
+				break;
+			case 15u:
+				buf[i] = 0b00001111;
+				break;
+			case 16u:
+				buf[i] = 0b00010000;
+				break;
+			default:
+				buf[i] = 0b11111111;
+	
+		}
+		
+
+		printf("char = %x ",buf[i]);
+	}
+
+}
+
 void readResponse(unsigned int buff[], int n){
 	int count =0;
-	unsigned int buf[n];
-	if((count = read(i2cBus, buf, 4*n)) < 0){
+	char buf[n];
+	//conversion(buff,buf,n);
+	if((count = read(i2cBus, buf, n)) < 0){
 		perror("READ");
 		exit(0);
 	}
@@ -262,16 +338,18 @@ void readResponse(unsigned int buff[], int n){
 	/*for(int i=0;i<n;i++){
 		printf(" buff %d  = %02hhx ",i,buf[i]);
 	}*/
-	strncpy(buff, buf, 4*n);
+	strncpy(buff, buf, n);
 
 	printf("I2C-TEST: Attempted to read %d bytes. %d bytes successfully read.\n", n, count);
 }
 
 void writeCommand(unsigned int buff[], int n){
-
+	
+	char buf[n];
+	conversion(buff,buf,n);
 	printf("I2C-TEST: Sending %d bytes... ", n);
 	int count =0;
-	if((count = write(i2cBus, buff, 4*n)) < 0){
+	if((count = write(i2cBus, buf, n)) < 0){
 		perror("WRITE");
 		exit(0);
 	}
